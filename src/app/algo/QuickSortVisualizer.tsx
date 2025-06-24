@@ -49,20 +49,54 @@ export default function QuickSortVisualizer({ array }: QuickSortVisualizerProps)
         setCurrentSnapshot(initialSnapshot);
     }, [array])
 
-    const createNumberElement = (element: ElementState) => (
-        <div
-            key={element.id}
-            className="bg-none border-3 text-black rounded  aspect-square flex items-center justify-center font-bold"
-        >
-            {element.value}
+    const renderNumberElement = (element: ElementState) => {
+        const getBackgroundColor = () => {
+            switch (element.visualState) {
+                case 'pivot': return 'bg-yellow-400';
+                case 'lower': return 'bg-blue-400';
+                case 'higher': return 'bg-red-400';
+                case 'sorted': return 'bg-green-400';
+                default: return 'bg-gray-200';
+            }
+        }
+        return (
+            <div
+                key={element.id}
+                className={`${getBackgroundColor()} border-3 text-black rounded  aspect-square flex items-center justify-center font-bold`}
+            >
+                {element.value}
 
-        </div>
-    )
+            </div>
+        )
+    }
 
-    const arrayElement = currentSnapshot?.elements.map((element) => createNumberElement(element))
+    const goToStep2 = () => {
+        if (!currentSnapshot) return
+
+        const middleIndex = Math.floor(array.length / 2)
+        const pivotElement = currentSnapshot.elements[middleIndex]
+
+        const step2Elements = currentSnapshot.elements.map(element =>
+            element.id === pivotElement.id
+                ? { ...element, visualState: 'pivot' as const }
+                : element
+        )
+
+        const step2Snapshot: AlgorithmSnapshot = {
+            elements: step2Elements,
+            sortedRegions: [],
+            gridDimensions: { rows: 1, columns: array.length }
+        }
+        setCurrentSnapshot(step2Snapshot)
+    }
+
+    const arrayElement = currentSnapshot?.elements.map((element) => renderNumberElement(element))
 
     return (
         <div className="p-20">
+            <button onClick={goToStep2} className="mb-4 px-4 py-2 bg-blue-500 text-white rounded">
+                Go to Step 2
+            </button>
             <div
                 className="grid gap-8"
                 style={{
@@ -76,3 +110,4 @@ export default function QuickSortVisualizer({ array }: QuickSortVisualizerProps)
 
     )
 }
+
