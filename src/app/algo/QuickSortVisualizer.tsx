@@ -63,6 +63,10 @@ export default function QuickSortVisualizer({ array }: QuickSortVisualizerProps)
             <div
                 key={element.id}
                 className={`${getBackgroundColor()} border-3 text-black rounded  aspect-square flex items-center justify-center font-bold`}
+                style={{
+                    gridRow: element.position.row + 1,
+                    gridColumn: element.position.column + 1
+                }}
             >
                 {element.value}
 
@@ -90,17 +94,41 @@ export default function QuickSortVisualizer({ array }: QuickSortVisualizerProps)
         setCurrentSnapshot(step2Snapshot)
     }
 
+    const goToStep3 = () => {
+        if (!currentSnapshot) return
+
+        const step2Elements = currentSnapshot.elements.map(element =>
+            element.visualState === 'pivot'
+                ? element
+                : { ...element, position: { ...element.position, row: 1 } }
+        )
+
+        const step3Snapshot: AlgorithmSnapshot = {
+            elements: step2Elements,
+            sortedRegions: [],
+            gridDimensions: { rows: 2, columns: array.length }
+        }
+        setCurrentSnapshot(step3Snapshot)
+    }
+
     const arrayElement = currentSnapshot?.elements.map((element) => renderNumberElement(element))
+
+
 
     return (
         <div className="p-20">
             <button onClick={goToStep2} className="mb-4 px-4 py-2 bg-blue-500 text-white rounded">
                 Go to Step 2
             </button>
+            <button onClick={goToStep3} className="mb-4 px-4 py-2 bg-blue-500 text-white rounded">
+                Go to Step 3
+            </button>
             <div
                 className="grid gap-8"
                 style={{
-                    gridTemplateColumns: `repeat(${array.length}, minmax(0, 1fr))`
+                    gridTemplateColumns: `repeat(${array.length}, minmax(0, 1fr))`,
+                    gridTemplateRows: `repeat(${currentSnapshot?.gridDimensions.rows || 1}, minmax(0, 1fr))`
+
                 }}
             >
                 {arrayElement}
