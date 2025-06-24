@@ -3,5 +3,13 @@
 import QuickSortVisualizer from '@/app/algo/QuickSortVisualizer'
 
 export default function Page() {
-    return <QuickSortVisualizer />
+
+    const arrayOne = [45, 3, 5, 0, 32, 23, 27];
+
+    return (
+        <div>
+            <QuickSortVisualizer array={arrayOne} />
+        </div>
+    )
+
 }
