@@ -22,6 +22,46 @@ export default function QuickSortVisualizer({ inputArray: propArray = [] }: Quic
     const [userArray, setUserArray] = useState<number[]>([]);
     const [hasUserGenerated, setHasUserGenerated] = useState(false); // ← Add this flag
 
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [playSpeed, setPlaySpeed] = useState(1000); // milliseconds between steps
+    const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Auto-play logic
+    useEffect(() => {
+        if (isPlaying && currentStepIndex < allSteps.length - 1) {
+            playIntervalRef.current = setTimeout(() => {
+                goToNextStep();
+            }, playSpeed);
+        } else if (currentStepIndex >= allSteps.length - 1) {
+            setIsPlaying(false); // Stop when we reach the end
+        }
+
+        return () => {
+            if (playIntervalRef.current) {
+                clearTimeout(playIntervalRef.current);
+            }
+        };
+    }, [isPlaying, currentStepIndex, playSpeed, allSteps.length]);
+
+    // Clean up on unmount
+    useEffect(() => {
+        return () => {
+            if (playIntervalRef.current) {
+                clearTimeout(playIntervalRef.current);
+            }
+        };
+    }, []);
+
+    const togglePlay = () => {
+        setIsPlaying(!isPlaying);
+    };
+
+    const resetAnimation = () => {
+        setIsPlaying(false);
+        setCurrentStepIndex(0);
+        setCurrentSnapshot(allSteps[0]);
+    };
+
     // Use userArray if it exists, otherwise use prop
     const inputArray = userArray.length > 0 ? userArray : propArray;
 
@@ -382,18 +422,49 @@ export default function QuickSortVisualizer({ inputArray: propArray = [] }: Quic
             <div className="mb-6 flex items-center gap-4">
                 <button
                     onClick={goToPreviousStep}
-                    disabled={currentStepIndex === 0}
+                    disabled={currentStepIndex === 0 || isPlaying}
                     className="px-4 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
                 >
                     Previous Step
                 </button>
+
+                <button
+                    onClick={togglePlay}
+                    disabled={currentStepIndex >= allSteps.length - 1}
+                    className="px-4 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors flex items-center gap-2"
+                >
+                    {isPlaying ? '⏸️ Pause' : '▶️ Play'}
+                </button>
+
+                <button
+                    onClick={resetAnimation}
+                    className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                    🔄 Reset
+                </button>
+
                 <button
                     onClick={goToNextStep}
-                    disabled={currentStepIndex === allSteps.length - 1}
+                    disabled={currentStepIndex === allSteps.length - 1 || isPlaying}
                     className="px-4 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
                 >
                     Next Step
                 </button>
+
+                <div className="flex items-center gap-2">
+                    <label className="text-black text-sm font-medium">Speed:</label>
+                    <select
+                        value={playSpeed}
+                        onChange={(e) => setPlaySpeed(Number(e.target.value))}
+                        className="text-black px-2 py-1 border border-gray-300 rounded text-sm"
+                    >
+                        <option value={2000}>0.5x (Slow)</option>
+                        <option value={1000}>1x (Normal)</option>
+                        <option value={500}>2x (Fast)</option>
+                        <option value={250}>4x (Very Fast)</option>
+                    </select>
+                </div>
+
                 <span className="text-gray-700 font-medium">
                     Step {currentStepIndex + 1} of {allSteps.length}
                 </span>
