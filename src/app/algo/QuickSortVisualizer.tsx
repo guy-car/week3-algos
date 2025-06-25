@@ -23,7 +23,7 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
     /**
      * Main function that generates all visualization steps for QuickSort algorithm
      */
-    const generateQuickSortSteps = (initialArray: number[]): AlgorithmSnapshot[] => {
+    const generateQuickSortSteps = (inputArray: number[]): AlgorithmSnapshot[] => {
         const steps: AlgorithmSnapshot[] = [];
         let maxDepthReached = 0;
 
@@ -38,8 +38,7 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
                 value,
                 positionY: 0,
                 positionX: index,
-                visualState: 'normal',
-                isInFinalPosition: false
+                visualState: 'normal'
             });
         });
 
@@ -90,7 +89,6 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
                 if (startCol === endCol) {
                     const element = Array.from(elements.values()).find(el => el.positionX === startCol);
                     if (element) {
-                        element.isInFinalPosition = true
                         createAlgorithmSnapshot(`Element ${element.value} is sorted`, sortedRegions);
                     }
                 }
@@ -201,19 +199,6 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
                 // Only right side needs sorting
                 performQuickSortWithVisualization(rightStart, endCol, currentDepth + 1);
             } else {
-                // Both sides are single elements - mark as sorted
-                if (lowerElements.length === 1) {
-                    const mapElement = elements.get(lowerElements[0].id);
-                    if (mapElement) {
-                        mapElement.isInFinalPosition = true;
-                    }
-                }
-                if (higherElements.length === 1) {
-                    const mapElement = elements.get(higherElements[0].id);
-                    if (mapElement) {
-                        mapElement.isInFinalPosition = true;
-                    }
-                }
                 if (lowerElements.length <= 1 && higherElements.length <= 1) {
                     createAlgorithmSnapshot(`Partition complete`, sortedRegions);
                 }
@@ -221,7 +206,13 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
         };
 
         // Start the QuickSort algorithm
-        performQuickSortWithVisualization(0, initialArray.length - 1, 0);
+        performQuickSortWithVisualization(0, inputArray.length - 1, 0);
+
+        elements.forEach(el => {
+            el.positionY = Math.floor(maxDepthReached / 2)
+            el.visualState = 'finalGradient'
+        });
+        createAlgorithmSnapshot("Final gradient animation!", [])
 
         return steps;
     };
@@ -271,15 +262,26 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
                 case 'lower': return 'bg-blue-400';
                 case 'higher': return 'bg-red-400';
                 case 'sorted': return 'bg-green-400';
+                case 'finalGradient': {
+                    //Calculate gradient using positionX
+                    const percentage = element.positionX / (inputArray.length - 1)
+                    const blue = Math.round(255 * (1 - percentage))
+                    const red = Math.round(255 * percentage)
+                    return { backgroundColor: `rgb(${blue}, 0, ${red})` }
+                }
                 default: return 'bg-gray-200';
             }
         };
 
+        const backgroundColor = getBackgroundColor()
+        const isInlineStyle = typeof backgroundColor === 'object'
+
         return (
             <div
                 key={element.id}
-                className={`${getBackgroundColor()} border-2 border-gray-600 text-black rounded-lg aspect-square flex items-center justify-center font-bold text-lg transition-all duration-300`}
+                className={`${isInlineStyle ? '' : backgroundColor} border-2 border-gray-600 text-black rounded-lg aspect-square flex items-center justify-center font-bold text-lg transition-all duration-300`}
                 style={{
+                    ...(isInlineStyle ? backgroundColor : {}),
                     gridRowStart: element.positionY + 1,
                     gridRowEnd: element.positionY + 2,
                     gridColumnStart: element.positionX + 1,
@@ -296,19 +298,19 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
      */
     const renderSortedRegionBars = () => {
         return null
-        if (!currentSnapshot) return null;
+        // if (!currentSnapshot) return null;
 
-        return currentSnapshot.sortedRegions.map((region, index) => (
-            <div
-                key={`sorted-${index}`}
-                className="bg-green-500 h-2 rounded transition-all duration-500"
-                style={{
-                    gridColumn: `${region.startCol + 1} / ${region.endCol + 2}`,
-                    gridRow: region.depth + 2,
-                    marginTop: '-0.5rem'
-                }}
-            />
-        ));
+        // return currentSnapshot.sortedRegions.map((region, index) => (
+        //     <div
+        //         key={`sorted-${index}`}
+        //         className="bg-green-500 h-2 rounded transition-all duration-500"
+        //         style={{
+        //             gridColumn: `${region.startCol + 1} / ${region.endCol + 2}`,
+        //             gridRow: region.depth + 2,
+        //             marginTop: '-0.5rem'
+        //         }}
+        //     />
+        // ));
     };
 
     const maxDepth = currentSnapshot?.maxDepthReached || 0;
