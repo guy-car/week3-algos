@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import {
     QuickSortVisualizerProps,
@@ -14,6 +14,44 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
     const [currentSnapshot, setCurrentSnapshot] = useState<AlgorithmSnapshot | null>(null);
     const [allSteps, setAllSteps] = useState<AlgorithmSnapshot[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
+    const containerRef = useRef<HTMLDivElement>(null)
+    const [cellSize, setCellSize] = useState({ width: 80, height: 80, gap: 32 })
+
+    useEffect(() => {
+        const calculateCellSize = () => {
+            if (containerRef.current && inputArray.length > 0) {
+                const containerWidth = containerRef.current.offsetWidth;
+                const padding = 32;
+
+                // Start with normal gap, but reduce if needed
+                let gap = 32;
+                let cellWidth = 40; // Start with minimum
+
+                // Calculate what cell width we can achieve with current gap
+                const totalGaps = (inputArray.length - 1) * gap;
+                const availableWidth = containerWidth - totalGaps - padding;
+                cellWidth = Math.max(40, availableWidth / inputArray.length);
+
+                // If cells are still too small, try reducing the gap
+                if (cellWidth <= 40 && gap > 8) {
+                    gap = 16; // Reduce gap
+                    const newTotalGaps = (inputArray.length - 1) * gap;
+                    const newAvailableWidth = containerWidth - newTotalGaps - padding;
+                    cellWidth = Math.max(40, newAvailableWidth / inputArray.length);
+                }
+
+                setCellSize({ width: cellWidth, height: cellWidth, gap }); // ← Store gap too
+            }
+        };
+
+        //Calculate on mount and array change
+        calculateCellSize()
+        //Recalculate on window resize
+        window.addEventListener('resize', calculateCellSize)
+        return () => {
+            window.removeEventListener('resize', calculateCellSize)
+        }
+    }, [inputArray.length])
 
     /**
      * Generates a unique ID for each element
@@ -266,6 +304,9 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
      */
     const renderNumberElement = (element: ElementState) => {
 
+        const translateX = element.positionX * (cellSize.width + cellSize.gap); // cellWidth + gap
+        const translateY = element.positionY * (cellSize.width + cellSize.gap); // cellHeight + gap
+
         const getBackgroundColor = () => {
             switch (element.visualState) {
                 case 'pivot': return 'bg-yellow-400';
@@ -289,38 +330,19 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
         return (
             <div
                 key={element.id}
-                className={`${isInlineStyle ? '' : backgroundColor} border-2 border-gray-600 text-black rounded-lg aspect-square flex items-center justify-center font-bold text-lg transition-all duration-300`}
+                className={`${isInlineStyle ? '' : backgroundColor} border-2 border-gray-600 text-black rounded-lg aspect-square flex items-center justify-center font-bold text-lg`}
                 style={{
                     ...(isInlineStyle ? backgroundColor : {}),
-                    gridRowStart: element.positionY + 1,
-                    gridRowEnd: element.positionY + 2,
-                    gridColumnStart: element.positionX + 1,
-                    gridColumnEnd: element.positionX + 2,
+                    position: 'absolute',
+                    width: `${cellSize.width}px`,
+                    height: `${cellSize.width}px`,
+                    transform: `translate(${translateX}px, ${translateY}px)`,
+                    transition: 'transform 0.5s ease-in-out, background-color 0.3s ease-in-out'
                 }}
             >
                 {element.value}
             </div>
         );
-    };
-
-    /**
-     * Renders green bars showing sorted regions
-     */
-    const renderSortedRegionBars = () => {
-        return null
-        // if (!currentSnapshot) return null;
-
-        // return currentSnapshot.sortedRegions.map((region, index) => (
-        //     <div
-        //         key={`sorted-${index}`}
-        //         className="bg-green-500 h-2 rounded transition-all duration-500"
-        //         style={{
-        //             gridColumn: `${region.startCol + 1} / ${region.endCol + 2}`,
-        //             gridRow: region.depth + 2,
-        //             marginTop: '-0.5rem'
-        //         }}
-        //     />
-        // ));
     };
 
     const maxDepth = currentSnapshot?.maxDepthReached || 0;
@@ -357,10 +379,11 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
 
             {/* Visualization Grid */}
             <div
+                ref={containerRef}
                 className="grid gap-8 relative"
                 style={{
-                    gridTemplateColumns: `repeat(${inputArray?.length || 1}, minmax(0, 1fr))`,
-                    gridTemplateRows: `repeat(${maxDepth + 2}, minmax(0, 1fr))`
+                    width: '100%',
+                    height: `${(maxDepth + 2) * (cellSize.height + 32)}px`, // Dynamic height
                 }}
             >
                 {currentSnapshot?.elements.map(element => renderNumberElement(element))}
