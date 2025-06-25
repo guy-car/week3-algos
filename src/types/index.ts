@@ -8,7 +8,6 @@ export interface ElementState {
     positionX: number;
     positionY: number;
     visualState: 'normal' | 'pivot' | 'lower' | 'higher' | 'sorted' | 'finalGradient';
-    isInFinalPosition: boolean
 }
 
 export interface SortedRegion {
