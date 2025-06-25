@@ -251,7 +251,7 @@ export default function QuickSortVisualizer({ inputArray: propArray = [] }: Quic
                 elementsNeedingColorChange.forEach(el => {
                     const mapElement = elements.get(el.id);
                     if (mapElement) {
-                        mapElement.visualState = mapElement.value < pivotValue ? 'lower' : 'higher';
+                        mapElement.visualState = mapElement.value <= pivotValue ? 'lower' : 'higher';
                     }
                 });
 
