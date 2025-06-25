@@ -115,29 +115,43 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
             createAlgorithmSnapshot(`Select pivot: ${pivotValue} (depth ${currentDepth})`);
 
             // Step 2: Move non-pivot elements down one level
-            rangeElements.forEach(el => {
-                if (el.id !== pivotElement.id && el.positionY <= currentDepth) {
+            const elementsToMove = rangeElements.filter(el =>
+                el.id !== pivotElement.id && el.positionY <= currentDepth
+            );
+
+            if (elementsToMove.length > 0) {
+                elementsToMove.forEach(el => {  // ← Use elementsToMove, not rangeElements
                     const mapElement = elements.get(el.id);
                     if (mapElement) {
                         mapElement.positionY = currentDepth + 1;
                         maxDepthReached = Math.max(maxDepthReached, mapElement.positionY);
                     }
-                }
-            });
+                });
 
-            createAlgorithmSnapshot(`Move non-pivot elements to depth ${currentDepth + 1}`);
+                createAlgorithmSnapshot(`Move non-pivot elements to depth ${currentDepth + 1}`);
+            }
 
             // Step 3: Color elements based on comparison with pivot
             rangeElements = getElementsInRange(startCol, endCol);
-            rangeElements.forEach(el => {
-                if (el.id !== pivotElement.id && el.visualState !== 'sorted') {
+
+            const elementsNeedingColorChange = rangeElements.filter(el => {
+                if (el.id !== pivotElement.id) {
+                    const shouldBe = el.value < pivotValue ? 'lower' : 'higher';
+                    return el.visualState !== shouldBe;
+                }
+                return false;
+            });
+
+            if (elementsNeedingColorChange.length > 0) {
+                elementsNeedingColorChange.forEach(el => {
                     const mapElement = elements.get(el.id);
                     if (mapElement) {
                         mapElement.visualState = mapElement.value < pivotValue ? 'lower' : 'higher';
                     }
-                }
-            });
-            createAlgorithmSnapshot(`Color elements: blue < ${pivotValue}, red > ${pivotValue}`);
+                });
+
+                createAlgorithmSnapshot(`Color elements: blue < ${pivotValue}, red > ${pivotValue}`);
+            }
 
             // Step 4: Rearrange elements (partition)
             rangeElements = getElementsInRange(startCol, endCol);
@@ -198,10 +212,6 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
             } else if (higherElements.length > 1) {
                 // Only right side needs sorting
                 performQuickSortWithVisualization(rightStart, endCol, currentDepth + 1);
-            } else {
-                if (lowerElements.length <= 1 && higherElements.length <= 1) {
-                    createAlgorithmSnapshot(`Partition complete`, sortedRegions);
-                }
             }
         };
 
