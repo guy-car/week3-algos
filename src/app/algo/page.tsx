@@ -8,7 +8,7 @@ export default function Page() {
 
     return (
         <div>
-            <QuickSortVisualizer array={arrayOne} />
+            <QuickSortVisualizer inputArray={arrayOne} />
         </div>
     )
 

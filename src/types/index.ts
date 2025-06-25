@@ -1,5 +1,5 @@
 export interface QuickSortVisualizerProps {
-    array: number[]
+    inputArray: number[]
 }
 
 export interface ElementState {
@@ -7,7 +7,8 @@ export interface ElementState {
     value: number;
     positionX: number;
     positionY: number;
-    visualState: 'normal' | 'pivot' | 'lower' | 'higher' | 'sorted';
+    visualState: 'normal' | 'pivot' | 'lower' | 'higher' | 'sorted' | 'finalGradient';
+    isInFinalPosition: boolean
 }
 
 export interface SortedRegion {
