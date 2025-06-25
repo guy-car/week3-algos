@@ -9,7 +9,7 @@ import {
     AlgorithmSnapshot
 } from '@/types'
 
-export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerProps) {
+export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisualizerProps) {
 
     const [currentSnapshot, setCurrentSnapshot] = useState<AlgorithmSnapshot | null>(null);
     const [allSteps, setAllSteps] = useState<AlgorithmSnapshot[]>([]);
@@ -31,7 +31,7 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
         const elements = new Map<string, ElementState>();
 
         // Initialize all elements in their starting positions (row 0)
-        initialArray.forEach((value, index) => {
+        inputArray.forEach((value, index) => {
             const id = generateUniqueId();
             elements.set(id, {
                 id,
@@ -39,6 +39,7 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
                 positionY: 0,
                 positionX: index,
                 visualState: 'normal',
+                isInFinalPosition: false
             });
         });
 
@@ -89,8 +90,7 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
                 if (startCol === endCol) {
                     const element = Array.from(elements.values()).find(el => el.positionX === startCol);
                     if (element) {
-                        element.visualState = 'sorted';
-                        sortedRegions.push({ startCol, endCol: startCol, depth: element.positionY });
+                        element.isInFinalPosition = true
                         createAlgorithmSnapshot(`Element ${element.value} is sorted`, sortedRegions);
                     }
                 }
@@ -166,7 +166,7 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
             const pivotFinalColumn = newCol++;
             if (pivotMapElement) {
                 pivotMapElement.positionX = pivotFinalColumn;
-                pivotMapElement.visualState = 'sorted';
+                pivotMapElement.visualState = 'pivot';
             }
 
             // Place higher elements (reds) on the right
@@ -205,15 +205,13 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
                 if (lowerElements.length === 1) {
                     const mapElement = elements.get(lowerElements[0].id);
                     if (mapElement) {
-                        mapElement.visualState = 'sorted';
-                        sortedRegions.push({ startCol: mapElement.positionX, endCol: mapElement.positionX, depth: currentDepth + 1 });
+                        mapElement.isInFinalPosition = true;
                     }
                 }
                 if (higherElements.length === 1) {
                     const mapElement = elements.get(higherElements[0].id);
                     if (mapElement) {
-                        mapElement.visualState = 'sorted';
-                        sortedRegions.push({ startCol: mapElement.positionX, endCol: mapElement.positionX, depth: currentDepth + 1 });
+                        mapElement.isInFinalPosition = true;
                     }
                 }
                 if (lowerElements.length <= 1 && higherElements.length <= 1) {
@@ -232,13 +230,13 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
      * Generate steps when array changes
      */
     useEffect(() => {
-        if (!array || array.length === 0) return;
+        if (!inputArray || inputArray.length === 0) return;
 
-        const steps = generateQuickSortSteps(array);
+        const steps = generateQuickSortSteps(inputArray);
         setAllSteps(steps);
         setCurrentSnapshot(steps[0]);
         setCurrentStepIndex(0);
-    }, [array]);
+    }, [inputArray]);
 
     /**
      * Navigate to next step
@@ -266,6 +264,7 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
      * Renders a single number element with appropriate styling
      */
     const renderNumberElement = (element: ElementState) => {
+
         const getBackgroundColor = () => {
             switch (element.visualState) {
                 case 'pivot': return 'bg-yellow-400';
@@ -296,6 +295,7 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
      * Renders green bars showing sorted regions
      */
     const renderSortedRegionBars = () => {
+        return null
         if (!currentSnapshot) return null;
 
         return currentSnapshot.sortedRegions.map((region, index) => (
@@ -347,12 +347,12 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
             <div
                 className="grid gap-8 relative"
                 style={{
-                    gridTemplateColumns: `repeat(${array?.length || 1}, minmax(0, 1fr))`,
+                    gridTemplateColumns: `repeat(${inputArray?.length || 1}, minmax(0, 1fr))`,
                     gridTemplateRows: `repeat(${maxDepth + 2}, minmax(0, 1fr))`
                 }}
             >
                 {currentSnapshot?.elements.map(element => renderNumberElement(element))}
-                {renderSortedRegionBars()}
+                {/* {renderSortedRegionBars()} */}
             </div>
         </div>
     );
