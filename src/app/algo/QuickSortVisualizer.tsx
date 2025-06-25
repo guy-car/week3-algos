@@ -275,6 +275,7 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
         setAllSteps(steps);
         setCurrentSnapshot(steps[0]);
         setCurrentStepIndex(0);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [inputArray]);
 
     /**
