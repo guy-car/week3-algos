@@ -22,3 +22,9 @@ export interface AlgorithmSnapshot {
     description: string;
     maxDepthReached: number;
 }
+
+export interface ArrayControlsProps {
+    arraySize: number;
+    onArraySizeChange: (size: number) => void;
+    onGenerateRandom: () => void
+}
