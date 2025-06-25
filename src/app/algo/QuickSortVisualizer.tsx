@@ -9,13 +9,40 @@ import {
     AlgorithmSnapshot
 } from '@/types'
 
-export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisualizerProps) {
+import ArrayControls from "./ArrayControl";
+
+export default function QuickSortVisualizer({ inputArray: propArray = [] }: QuickSortVisualizerProps) {
 
     const [currentSnapshot, setCurrentSnapshot] = useState<AlgorithmSnapshot | null>(null);
     const [allSteps, setAllSteps] = useState<AlgorithmSnapshot[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null)
     const [cellSize, setCellSize] = useState({ width: 80, height: 80, gap: 32 })
+    const [arraySize, setArraySize] = useState(propArray.length || 12);
+    const [userArray, setUserArray] = useState<number[]>([]);
+    const [hasUserGenerated, setHasUserGenerated] = useState(false); // ← Add this flag
+
+    // Use userArray if it exists, otherwise use prop
+    const inputArray = userArray.length > 0 ? userArray : propArray;
+
+    // Function to generate random array
+    const generateRandomArray = (size: number) => {
+        const newArray = Array.from({ length: size }, () =>
+            Math.floor(Math.random() * 20) + 1 // Random numbers 1-20
+        );
+        setUserArray(newArray);
+        setHasUserGenerated(true); // ← Mark that user has generated
+    };
+
+    // Generate initial array or when size changes
+    useEffect(() => {
+        if (!hasUserGenerated && propArray.length > 0) {
+            // Use the hardcoded array on first load
+            return;
+        } else if (!hasUserGenerated) {
+            generateRandomArray(arraySize); // Generate if no hardcoded array
+        }
+    }, [arraySize, hasUserGenerated]);
 
     useEffect(() => {
         const calculateCellSize = () => {
@@ -269,6 +296,7 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
      * Generate steps when array changes
      */
     useEffect(() => {
+        console.log('🔄 Regenerating steps for array:', userArray);
         if (!inputArray || inputArray.length === 0) return;
 
         const steps = generateQuickSortSteps(inputArray);
@@ -276,7 +304,7 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
         setCurrentSnapshot(steps[0]);
         setCurrentStepIndex(0);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [inputArray]);
+    }, [userArray]);
 
     /**
      * Navigate to next step
@@ -355,14 +383,14 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
                 <button
                     onClick={goToPreviousStep}
                     disabled={currentStepIndex === 0}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+                    className="px-4 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
                 >
                     Previous Step
                 </button>
                 <button
                     onClick={goToNextStep}
                     disabled={currentStepIndex === allSteps.length - 1}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+                    className="px-4 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
                 >
                     Next Step
                 </button>
@@ -371,12 +399,19 @@ export default function QuickSortVisualizer({ inputArray = [] }: QuickSortVisual
                 </span>
             </div>
 
-            {/* Current Step Description */}
+            <ArrayControls
+                arraySize={arraySize}
+                onArraySizeChange={setArraySize}
+                onGenerateRandom={() => generateRandomArray(arraySize)}
+            />
+
+
+            {/* Current Step Description
             {currentSnapshot && (
                 <div className="mb-4 text-gray-600">
                     {currentSnapshot.description}
                 </div>
-            )}
+            )} */}
 
             {/* Visualization Grid */}
             <div
