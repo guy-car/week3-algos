@@ -22,29 +22,20 @@ interface AlgorithmSnapshot {
 }
 
 export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerProps) {
-    console.log('Component mounted with array:', array);
     const [currentSnapshot, setCurrentSnapshot] = useState<AlgorithmSnapshot | null>(null);
     const [allSteps, setAllSteps] = useState<AlgorithmSnapshot[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
-    /**
-     * Generates a unique ID for each element
-     */
-    const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
+    const generateId = () => Math.random().toString(36).substring(2, 9);
 
-    /**
-     * Main function that generates all visualization steps for QuickSort algorithm
-     */
     const generateQuickSortSteps = (initialArray: number[]): AlgorithmSnapshot[] => {
         const steps: AlgorithmSnapshot[] = [];
         let maxDepthReached = 0;
 
-        // Create a Map to store all elements with their current state
         const elements = new Map<string, ElementState>();
 
-        // Initialize all elements in their starting positions (row 0)
         initialArray.forEach((value, index) => {
-            const id = generateUniqueId();
+            const id = generateId();
             elements.set(id, {
                 id,
                 value,
@@ -54,86 +45,60 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
             });
         });
 
-        // Create the initial snapshot showing unsorted array
-        steps.push({
-            elements: Array.from(elements.values()).map(el => ({
-                ...el,
-                position: { ...el.position } // Deep copy to prevent reference sharing
-            })),
-            sortedRegions: [],
-            description: "Initial array",
-            maxDepthReached: 0
-        });
-
-        /**
-         * Creates a snapshot of the current algorithm state
-         */
-        const createAlgorithmSnapshot = (description: string, sortedRegions: { startCol: number; endCol: number; depth: number }[] = []): void => {
+        const createSnapshot = (description: string, sortedRegions: { startCol: number; endCol: number; depth: number }[] = []): void => {
             const currentMaxDepth = Math.max(...Array.from(elements.values()).map(el => el.depth), 0);
             maxDepthReached = Math.max(maxDepthReached, currentMaxDepth);
 
-            const snapshot = {
-                elements: Array.from(elements.values()).map(el => ({
-                    ...el,
-                    position: { ...el.position } // Deep copy to prevent reference sharing
-                })),
+            steps.push({
+                elements: Array.from(elements.values()).map(el => ({ ...el })),
                 sortedRegions: [...sortedRegions],
                 description,
                 maxDepthReached
-            };
-
-            steps.push(snapshot);
+            });
         };
 
-        /**
-         * Gets all elements within a specific column range, sorted by column
-         */
-        const getElementsInRange = (startCol: number, endCol: number) => {
+        const getCurrentRangeElements = (startCol, endCol) => {
             return Array.from(elements.values())
                 .filter(el => el.position.column >= startCol && el.position.column <= endCol)
                 .sort((a, b) => a.position.column - b.position.column);
         };
 
+        createSnapshot("Initial array");
+
         const sortedRegions: { startCol: number; endCol: number; depth: number }[] = [];
 
-        /**
-         * Recursive QuickSort implementation with visualization steps
-         */
-        const performQuickSortWithVisualization = (startCol: number, endCol: number, currentDepth: number): void => {
-            // Base case: single element or empty range
+        const quickSortRecursive = (startCol: number, endCol: number, currentDepth: number): void => {
             if (startCol >= endCol) {
                 if (startCol === endCol) {
                     const element = Array.from(elements.values()).find(el => el.position.column === startCol);
                     if (element) {
                         element.visualState = 'sorted';
                         sortedRegions.push({ startCol, endCol: startCol, depth: element.depth });
-                        createAlgorithmSnapshot(`Element ${element.value} is sorted`, sortedRegions);
+                        createSnapshot(`Element ${element.value} is sorted`, sortedRegions);
                     }
                 }
                 return;
             }
 
-            // Get elements in current range
-            let rangeElements = getElementsInRange(startCol, endCol);
 
-            // Skip if all elements are already sorted
+            let rangeElements = Array.from(elements.values())
+                .filter(el => el.position.column >= startCol && el.position.column <= endCol)
+                .sort((a, b) => a.position.column - b.position.column);
+            console.log('Current range values:', rangeElements.map(el => el.value));
+
             if (rangeElements.every(el => el.visualState === 'sorted')) {
+                console.log('Current range values:', rangeElements.map(el => el.value));
                 return;
             }
 
-            // Step 1: Select pivot (middle element)
             const pivotIndex = Math.floor(rangeElements.length / 2);
             const pivotElement = rangeElements[pivotIndex];
             const pivotValue = pivotElement.value;
 
-            const pivotMapElement = elements.get(pivotElement.id);
-            if (pivotMapElement) {
-                pivotMapElement.visualState = 'pivot';
-            }
-            createAlgorithmSnapshot(`Select pivot: ${pivotValue} (depth ${currentDepth})`);
+            pivotElement.visualState = 'pivot';
 
-            // Step 2: Move non-pivot elements down one level
             rangeElements.forEach(el => {
+                console.log('Current range values:', rangeElements.map(el => el.value));
                 if (el.id !== pivotElement.id && el.depth <= currentDepth) {
                     const mapElement = elements.get(el.id);
                     if (mapElement) {
@@ -142,23 +107,27 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
                     }
                 }
             });
+            createSnapshot(`Move non-pivot elements to depth ${currentDepth + 1}`);
 
-            createAlgorithmSnapshot(`Move non-pivot elements to depth ${currentDepth + 1}`);
+            rangeElements = Array.from(elements.values())
+                .filter(el => el.position.column >= startCol && el.position.column <= endCol)
+                .sort((a, b) => a.position.column - b.position.column);
+            console.log('Current range values:', rangeElements.map(el => el.value));
 
-            // Step 3: Color elements based on comparison with pivot
-            rangeElements = getElementsInRange(startCol, endCol);
+            createSnapshot(`Move non-pivot elements to depth ${currentDepth + 1}`);
+
             rangeElements.forEach(el => {
                 if (el.id !== pivotElement.id && el.visualState !== 'sorted') {
                     const mapElement = elements.get(el.id);
-                    if (mapElement) {
+                    if (mapElement) {  // ✅ Add this check
                         mapElement.visualState = mapElement.value < pivotValue ? 'lower' : 'higher';
                     }
                 }
             });
-            createAlgorithmSnapshot(`Color elements: blue < ${pivotValue}, red > ${pivotValue}`);
+            rangeElements = getCurrentRangeElements(startCol, endCol);
+            createSnapshot(`Color elements: blue < ${pivotValue}, red > ${pivotValue}`);
 
-            // Step 4: Rearrange elements (partition)
-            rangeElements = getElementsInRange(startCol, endCol);
+            // Step 4: Rearrange elements
             const lowerElements = rangeElements.filter(el => {
                 const mapElement = elements.get(el.id);
                 return mapElement && mapElement.visualState === 'lower';
@@ -168,9 +137,9 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
                 return mapElement && mapElement.visualState === 'higher';
             });
 
-            let newCol = startCol;
+            let newCol = startCol; // ✅ Add this declaration
 
-            // Place lower elements (blues) on the left
+            // Place lower elements
             lowerElements.forEach(el => {
                 const mapElement = elements.get(el.id);
                 if (mapElement) {
@@ -178,46 +147,44 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
                 }
             });
 
-            // Place pivot in the middle
+            // Place pivot
             const pivotFinalColumn = newCol++;
+            const pivotMapElement = elements.get(pivotElement.id); // ✅ Get pivot from Map
             if (pivotMapElement) {
                 pivotMapElement.position.column = pivotFinalColumn;
-                pivotMapElement.visualState = 'sorted';
             }
+            createSnapshot(`Select pivot: ${pivotValue} (depth ${currentDepth})`);
 
-            // Place higher elements (reds) on the right
+            // Place higher elements
             higherElements.forEach(el => {
                 const mapElement = elements.get(el.id);
                 if (mapElement) {
                     mapElement.position.column = newCol++;
                 }
             });
+            createSnapshot(`Rearrange: blues left, pivot at index ${pivotFinalColumn}, reds right`);
 
-            createAlgorithmSnapshot(`Rearrange: blues left, pivot at index ${pivotFinalColumn}, reds right`);
-
+            if (pivotMapElement) {
+                pivotMapElement.visualState = 'sorted';  // ✅ Use the Map element
+            }
             sortedRegions.push({ startCol: pivotFinalColumn, endCol: pivotFinalColumn, depth: currentDepth });
 
             if (lowerElements.length === 0 && higherElements.length === 0) {
                 sortedRegions.push({ startCol, endCol, depth: currentDepth + 1 });
-                createAlgorithmSnapshot(`Section fully sorted`, sortedRegions);
+                createSnapshot(`Section fully sorted`, sortedRegions);
             }
 
-            // Recursively sort left and right partitions
             const leftEnd = pivotFinalColumn - 1;
             const rightStart = pivotFinalColumn + 1;
 
             if (lowerElements.length > 1 && higherElements.length > 1) {
-                // Both sides need sorting
-                performQuickSortWithVisualization(startCol, leftEnd, currentDepth + 1);
-                performQuickSortWithVisualization(rightStart, endCol, currentDepth + 1);
+                quickSortRecursive(startCol, leftEnd, currentDepth + 1);
+                quickSortRecursive(rightStart, endCol, currentDepth + 1);
             } else if (lowerElements.length > 1) {
-                // Only left side needs sorting
-                performQuickSortWithVisualization(startCol, leftEnd, currentDepth + 1);
+                quickSortRecursive(startCol, leftEnd, currentDepth + 1);
             } else if (higherElements.length > 1) {
-                // Only right side needs sorting
-                performQuickSortWithVisualization(rightStart, endCol, currentDepth + 1);
+                quickSortRecursive(rightStart, endCol, currentDepth + 1);
             } else {
-                // Both sides are single elements - mark as sorted
                 if (lowerElements.length === 1) {
                     const mapElement = elements.get(lowerElements[0].id);
                     if (mapElement) {
@@ -233,20 +200,25 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
                     }
                 }
                 if (lowerElements.length <= 1 && higherElements.length <= 1) {
-                    createAlgorithmSnapshot(`Partition complete`, sortedRegions);
+                    createSnapshot(`Partition complete`, sortedRegions);
                 }
             }
         };
 
-        // Start the QuickSort algorithm
-        performQuickSortWithVisualization(0, initialArray.length - 1, 0);
+        quickSortRecursive(0, initialArray.length - 1, 0);
+
+        elements.forEach(el => {
+            el.depth = 0;
+            el.position.row = 0;
+            el.visualState = 'sorted';
+        });
+        sortedRegions.length = 0;
+        sortedRegions.push({ startCol: 0, endCol: initialArray.length - 1, depth: 0 });
+        createSnapshot("Sorting complete!", sortedRegions);
 
         return steps;
     };
 
-    /**
-     * Generate steps when array changes
-     */
     useEffect(() => {
         if (!array || array.length === 0) return;
 
@@ -254,18 +226,9 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
         setAllSteps(steps);
         setCurrentSnapshot(steps[0]);
         setCurrentStepIndex(0);
-
-        // DEBUG: Check first step
-        console.log('First step elements:', steps[0].elements.map(el => ({
-            value: el.value,
-            row: el.position.row
-        })));
     }, [array]);
 
-    /**
-     * Navigate to next step
-     */
-    const goToNextStep = () => {
+    const nextStep = () => {
         if (currentStepIndex < allSteps.length - 1) {
             const newIndex = currentStepIndex + 1;
             setCurrentStepIndex(newIndex);
@@ -273,10 +236,7 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
         }
     };
 
-    /**
-     * Navigate to previous step
-     */
-    const goToPreviousStep = () => {
+    const prevStep = () => {
         if (currentStepIndex > 0) {
             const newIndex = currentStepIndex - 1;
             setCurrentStepIndex(newIndex);
@@ -284,24 +244,16 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
         }
     };
 
-    /**
-     * Renders a single number element with appropriate styling
-     */
     const renderNumberElement = (element: ElementState) => {
         const getBackgroundColor = () => {
-            switch (element.visualState) {
-                case 'pivot': return 'bg-yellow-400';
-                case 'lower': return 'bg-blue-400';
-                case 'higher': return 'bg-red-400';
-                case 'sorted': return 'bg-green-400';
-                default: return 'bg-gray-200';
-            }
+            const opacity = element.position.row * 0.2;
+            return `rgba(0, 0, 255, ${opacity})`;
         };
 
         return (
             <div
                 key={element.id}
-                className={`${getBackgroundColor()} border-2 border-gray-600 text-black rounded-lg aspect-square flex items-center justify-center font-bold text-lg transition-all duration-300`}
+                className={`${getBackgroundColor()} border-2 border-gray-600 text-black rounded-lg aspect-square flex items-center justify-center font-bold text-lg`}
                 style={{
                     gridRowStart: element.position.row + 1,
                     gridRowEnd: element.position.row + 2,
@@ -314,10 +266,7 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
         );
     };
 
-    /**
-     * Renders green bars showing sorted regions
-     */
-    const renderSortedRegionBars = () => {
+    const renderSortedBars = () => {
         if (!currentSnapshot) return null;
 
         return currentSnapshot.sortedRegions.map((region, index) => (
@@ -337,17 +286,16 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
 
     return (
         <div className="p-8 max-w-6xl mx-auto">
-            {/* Navigation Controls */}
             <div className="mb-6 flex items-center gap-4">
                 <button
-                    onClick={goToPreviousStep}
+                    onClick={prevStep}
                     disabled={currentStepIndex === 0}
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
                 >
                     Previous Step
                 </button>
                 <button
-                    onClick={goToNextStep}
+                    onClick={nextStep}
                     disabled={currentStepIndex === allSteps.length - 1}
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
                 >
@@ -358,14 +306,12 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
                 </span>
             </div>
 
-            {/* Current Step Description */}
             {currentSnapshot && (
                 <div className="mb-4 text-gray-600">
                     {currentSnapshot.description}
                 </div>
             )}
 
-            {/* Visualization Grid */}
             <div
                 className="grid gap-8 relative border-2 border-red-500"
                 style={{
@@ -374,7 +320,7 @@ export default function QuickSortVisualizer({ array = [] }: QuickSortVisualizerP
                 }}
             >
                 {currentSnapshot?.elements.map(element => renderNumberElement(element))}
-                {renderSortedRegionBars()}
+                {renderSortedBars()}
             </div>
         </div>
     );
