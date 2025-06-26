@@ -1,6 +1,6 @@
 'use client'
 
-import QuickSortVisualizer from '@/app/algo/QuickSortVisualizer'
+import InsertionSort from '@/app/insertionsort/InsertionSort'
 
 export default function Page() {
 
@@ -8,7 +8,7 @@ export default function Page() {
 
     return (
         <div>
-            <QuickSortVisualizer inputArray={arrayOne} />
+            <InsertionSort inputArray={arrayOne} />
         </div>
     )
 
