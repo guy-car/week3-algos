@@ -21,7 +21,6 @@ export default function QuickSortVisualizer({ inputArray: propArray = [] }: Quic
     const [arraySize, setArraySize] = useState(propArray.length || 12);
     const [userArray, setUserArray] = useState<number[]>([]);
     const [hasUserGenerated, setHasUserGenerated] = useState(false); // ← Add this flag
-
     const [isPlaying, setIsPlaying] = useState(false);
     const [playSpeed, setPlaySpeed] = useState(1000); // milliseconds between steps
     const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -68,7 +67,7 @@ export default function QuickSortVisualizer({ inputArray: propArray = [] }: Quic
     // Function to generate random array
     const generateRandomArray = (size: number) => {
         const newArray = Array.from({ length: size }, () =>
-            Math.floor(Math.random() * 20) + 1 // Random numbers 1-20
+            Math.floor(Math.random() * 99) + 1 // Random numbers 1-99
         );
         setUserArray(newArray);
         setHasUserGenerated(true); // ← Mark that user has generated
