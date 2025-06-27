@@ -14,14 +14,22 @@ export default function InsertionSort(
 
     const [currentFrame, setCurrentFrame] = useState<InsertionSortState>()
 
-    const clickShutter = (newFrame: InsertionSortState) => {
+    const updateFrame = (newFrame: InsertionSortState) => {
         setCurrentFrame(newFrame)
     }
 
-    const insertionSort = (input: number[], clickShutter: (state: InsertionSortState) => void
+    const insertionSort = (input: number[], updateFrame: (state: InsertionSortState) => void
     ): number[] => {
 
         const array = [...input]
+
+        const takeSnapshot = (currentIndex: number, lookBackIndex: number) => {
+            updateFrame({
+                array: [...array],
+                currentIndex: currentIndex,
+                lookBackIndex: lookBackIndex
+            })
+        }
 
         /////// Helper function
         function swap(arr: number[], firstIndex: number, secondIndex: number): void {
@@ -36,24 +44,21 @@ export default function InsertionSort(
 
             let lookBackIndex = currentIndex - 1
 
-            clickShutter({
-                array: [...array],
-                currentIndex: currentIndex,
-                lookBackIndex: lookBackIndex
-            })
+            takeSnapshot(currentIndex, lookBackIndex)
 
             while (lookBackIndex >= 0 && array[lookBackIndex] > array[lookBackIndex + 1]) {
                 //capture state
                 swap(array, lookBackIndex, lookBackIndex + 1)
                 lookBackIndex--
             }
+            takeSnapshot(currentIndex, lookBackIndex)
         }
         //capture state
         return array
     }
 
     useEffect(() => {
-        insertionSort(inputArray, clickShutter)
+        insertionSort(inputArray, updateFrame)
     }, [inputArray])
 
     return (
